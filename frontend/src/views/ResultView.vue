@@ -534,9 +534,9 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- 详细维度 -->
+      <!-- 详细维度 (全量展示，包含特殊纹路与掌丘) -->
       <div class="space-y-4 mb-8">
-        <div v-for="dim in result?.dimensions?.slice(0, 5)" :key="dim.name" class="bg-white/5 rounded-2xl p-4 border border-white/5">
+        <div v-for="dim in result?.dimensions" :key="dim.name" class="bg-white/5 rounded-2xl p-4 border border-white/5">
           <div class="flex justify-between items-center mb-2">
             <span class="font-bold text-primary-gold text-sm">{{ dim.name }}</span>
             <span class="text-[12px] font-mono text-gray-500">{{ dim.score }}</span>
