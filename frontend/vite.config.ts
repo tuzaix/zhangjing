@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
+    preview: {
+      allowedHosts: ['zhangjing.treatsyoself.com', 'all']
+    },
     server: {
       proxy: {
         '/api': {
