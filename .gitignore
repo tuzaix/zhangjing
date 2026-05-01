@@ -40,3 +40,7 @@ logs/
 backend/app/static/uploads/*
 !backend/app/static/uploads/.gitkeep
 backend/data/
+backend/uploads/
+
+frontend/dist/
+frontend/node_modules/
