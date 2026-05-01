@@ -17,7 +17,7 @@ const copied = ref(false)
 const modes = [
   { id: 'standard', name: '标准版', icon: '⚖️' },
   { id: 'toxic', name: '毒舌版', icon: '🔥' },
-  { id: 'money', name: '搞钱专项', icon: '💰' },
+  { id: 'money', name: '搞钱版', icon: '💰' },
   { id: 'love', name: '恋爱版', icon: '❤️' }
 ]
 
@@ -234,7 +234,7 @@ onMounted(() => {
     <!-- 头部标题区 -->
     <div class="text-center mt-8 mb-2 px-6 animate-in fade-in slide-in-from-top-4 duration-1000">
       <h1 class="text-3xl font-bold tracking-tight text-white mb-3">
-        掌镜<span class="text-primary-gold">AI</span>手相解读
+        掌镜<span class="text-primary-gold"> AI </span>手相大师
       </h1>
       <p class="text-[10px] text-gray-500 uppercase tracking-[0.4em] font-medium mt-2">
         Deep Vision Analysis Report
