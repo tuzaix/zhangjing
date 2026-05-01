@@ -15,6 +15,9 @@ sudo apt update && sudo apt upgrade -y
 ```bash
 # 安装 Python 3.10+, Node.js, Nginx, MySQL, Redis
 sudo apt install -y python3-pip python3-venv nodejs npm nginx mysql-server redis-server
+
+# 全局安装 PM2
+sudo npm install -g pm2
 ```
 
 ---
@@ -52,11 +55,11 @@ Description=Zhangjing Backend Service
 After=network.target
 
 [Service]
-User=www-data
-Group=www-data
+User=root
+Group=root
 WorkingDirectory=/var/www/zhangjing/backend
 Environment="PATH=/var/www/zhangjing/backend/venv/bin"
-ExecStart=/var/www/zhangjing/backend/venv/bin/gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind 127.0.0.1:8000
+ExecStart=/var/www/zhangjing/backend/venv/bin/gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:7358
 
 [Install]
 WantedBy=multi-user.target
@@ -81,7 +84,7 @@ npm run build
 ```
 
 ### 3.2 产物位置
-打包后的文件位于 `frontend/dist` 目录下。
+打包后的静态文件位于 `frontend/dist` 目录下，将通过 Nginx 直接分发。
 
 ---
 
@@ -93,7 +96,7 @@ server {
     listen 80;
     server_name 你的域名或服务器IP;
 
-    # 前端静态文件
+    # 前端静态文件分发
     location / {
         root /var/www/zhangjing/frontend/dist;
         index index.html;
@@ -102,7 +105,7 @@ server {
 
     # 后端接口代理
     location /api {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://127.0.0.1:7358;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
