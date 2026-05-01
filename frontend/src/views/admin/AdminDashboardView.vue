@@ -152,6 +152,21 @@ const copyToClipboard = async (text: string) => {
     console.error('Failed to copy!', err)
   }
 }
+
+const getStatusInfo = (status: string) => {
+  switch (status) {
+    case 'not_activated':
+      return { name: '待激活', class: 'bg-gray-500/20 text-gray-400' }
+    case 'activated':
+      return { name: '已激活', class: 'bg-green-500/20 text-green-400' }
+    case 'used':
+      return { name: '已使用', class: 'bg-primary-purple/20 text-primary-purple' }
+    case 'expired':
+      return { name: '已过期', class: 'bg-status-danger/20 text-status-danger' }
+    default:
+      return { name: status, class: 'bg-white/5 text-white' }
+  }
+}
 </script>
 
 <template>
@@ -315,6 +330,7 @@ const copyToClipboard = async (text: string) => {
                   { id: '', name: '全部', count: stats?.cards?.total },
                   { id: 'not_activated', name: '待激活', count: stats?.cards?.not_activated },
                   { id: 'activated', name: '已激活', count: stats?.cards?.activated },
+                  { id: 'used', name: '已使用', count: stats?.cards?.used },
                   { id: 'expired', name: '已过期', count: stats?.cards?.expired }
                 ]" 
                 :key="status.id"
@@ -418,9 +434,9 @@ const copyToClipboard = async (text: string) => {
                   <td class="px-6 py-4">
                     <span :class="[
                       'text-[10px] font-bold px-2 py-0.5 rounded-full uppercase',
-                      card.status === 'not_activated' ? 'bg-gray-500/20 text-gray-400' : 'bg-green-500/20 text-green-400'
+                      getStatusInfo(card.status).class
                     ]">
-                      {{ card.status === 'not_activated' ? '待激活' : '已激活' }}
+                      {{ getStatusInfo(card.status).name }}
                     </span>
                   </td>
                   <td class="px-6 py-4 text-xs text-gray-400">{{ formatDate(card.created_at) }}</td>

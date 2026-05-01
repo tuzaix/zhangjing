@@ -51,14 +51,26 @@ const handleVerify = async () => {
       card_id: cardId.value
     })
     
-    const { status } = response.data
+    const { status, has_cache, cached_mode } = response.data
     
     saveToHistory(cardId.value)
     
     if (status === 'not_activated') {
       router.push({ name: 'upload', query: { cardId: cardId.value } })
     } else if (status === 'activated') {
-      router.push({ name: 'mode-select', query: { cardId: cardId.value } })
+      if (has_cache && cached_mode) {
+        // 如果已有缓存，直接跳转结果页
+        router.push({ 
+          name: 'result', 
+          query: { 
+            cardId: cardId.value,
+            mode: cached_mode
+          } 
+        })
+      } else {
+        // 否则进入模式选择
+        router.push({ name: 'mode-select', query: { cardId: cardId.value } })
+      }
     }
   } catch (error: any) {
     // ... same error handling

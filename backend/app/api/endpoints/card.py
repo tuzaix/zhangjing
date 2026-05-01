@@ -7,7 +7,7 @@ import re
 from app.db.session import get_db
 from app.services.card_service import CardService
 from app.services.security_service import security_service
-from app.models.card import CardStatus
+from app.models.card import CardStatus, InterpretationCache
 
 router = APIRouter()
 
@@ -63,9 +63,17 @@ def verify_card(request: CardVerifyRequest, fastapi_request: Request, db: Sessio
             }
         }
     elif card.status == CardStatus.ACTIVATED:
+        # 检查是否已有缓存的解读结果
+        cache = db.query(InterpretationCache).filter(
+            InterpretationCache.card_id == card_id,
+            InterpretationCache.is_deleted == False
+        ).first()
+        
         return {
             "code": 0,
             "status": "activated",
+            "has_cache": cache is not None,
+            "cached_mode": cache.mode if cache else None,
             "message": "找到分析报告",
             "data": {
                 "activated_at": card.activated_at.isoformat() if card.activated_at else None
