@@ -53,11 +53,12 @@ const triggerAnalysis = async () => {
     setTimeout(() => {
       progress.value = 100
       setTimeout(() => {
-        router.push({ 
+        router.replace({ 
           name: 'result', 
           query: { 
             cardId,
-            mode: mode
+            mode: mode,
+            type: type
           } 
         })
       }, 500)

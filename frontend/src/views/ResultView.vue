@@ -195,6 +195,12 @@ const reportTabs = [
 
 onMounted(() => {
   fetchResult()
+  
+  // 禁止后退
+  history.pushState(null, '', document.URL)
+  window.addEventListener('popstate', function() {
+    history.pushState(null, '', document.URL)
+  })
 })
 </script>
 
