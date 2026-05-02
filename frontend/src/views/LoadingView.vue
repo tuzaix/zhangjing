@@ -8,6 +8,7 @@ const route = useRoute()
 const router = useRouter()
 const cardId = route.query.cardId as string
 const mode = (route.query.mode as string) || 'standard'
+const type = (route.query.type as string) || 'personal'
 
 const currentStep = ref(0)
 const progress = ref(0)
@@ -44,7 +45,8 @@ const triggerAnalysis = async () => {
   try {
     await axios.post('/api/v1/analysis/start', {
       card_id: cardId,
-      mode: mode
+      mode: mode,
+      type: type
     })
     
     // Once backend is done, wait for animation to finish or jump
@@ -106,7 +108,9 @@ onUnmounted(() => {
       </div>
 
       <h2 class="text-2xl font-bold mb-4">{{ steps[currentStep].name }}</h2>
-      <p class="text-gray-400 mb-8">AI 正在深度解析你的命运纹路，请稍候...</p>
+      <p class="text-gray-400 mb-8">
+        {{ type === 'personal' ? 'AI 正在深度解析你的命运纹路，请稍候...' : 'AI 正在深度解析双方的命运契合度，请稍候...' }}
+      </p>
 
       <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-4">
         <div 

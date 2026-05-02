@@ -56,7 +56,7 @@ const handleVerify = async () => {
     saveToHistory(cardId.value)
     
     if (status === 'not_activated') {
-      router.push({ name: 'upload', query: { cardId: cardId.value } })
+      router.push({ name: 'analysis-type', query: { cardId: cardId.value } })
     } else if (status === 'activated') {
       if (has_cache && cached_mode) {
         // 如果已有缓存，直接跳转结果页
@@ -68,8 +68,8 @@ const handleVerify = async () => {
           } 
         })
       } else {
-        // 否则进入模式选择
-        router.push({ name: 'mode-select', query: { cardId: cardId.value } })
+        // 否则进入分析类型选择（或者根据业务逻辑直接进入模式选择）
+        router.push({ name: 'analysis-type', query: { cardId: cardId.value } })
       }
     }
   } catch (error: any) {

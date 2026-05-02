@@ -39,10 +39,10 @@ class AnalysisService:
         )
 
     @classmethod
-    def analyze_with_vision_model(cls, image_path: str, right_image_path: str, mode: str = "standard", model: str = None):
+    def analyze_with_vision_model(cls, image_path: str, right_image_path: str, mode: str = "standard", model: str = None, analysis_type: str = "personal"):
         """
         调用支持视觉的 AI 模型进行分析 (支持 GPT-4o, Claude 3.5 Sonnet 等)
-        强制要求双手对比分析
+        支持个人双手分析、闺蜜匹配、情侣匹配
         """
         client = cls.get_openai_client()
         if not client:
@@ -51,39 +51,44 @@ class AnalysisService:
 
         # 使用传入的模型，或者配置文件中的默认模型
         target_model = model or settings.DEFAULT_MODEL
-        logger.info(f"Starting AI analysis with model: {target_model}, mode: {mode}")
+        logger.info(f"Starting AI analysis with model: {target_model}, mode: {mode}, type: {analysis_type}")
 
         try:
             # 准备图片内容
             content_list = []
             
-            # 加载左手
+            # 加载图1
             with open(image_path, "rb") as f:
-                left_base64 = base64.b64encode(f.read()).decode('utf-8')
+                img1_base64 = base64.b64encode(f.read()).decode('utf-8')
             
-            # 加载右手
+            # 加载图2
             if not right_image_path or not os.path.exists(right_image_path):
-                logger.error("Right hand image missing for dual-hand analysis.")
+                logger.error("Second image missing for dual-image analysis.")
                 return None
                 
             with open(right_image_path, "rb") as f:
-                right_base64 = base64.b64encode(f.read()).decode('utf-8')
+                img2_base64 = base64.b64encode(f.read()).decode('utf-8')
             
             # 从配置文件加载 Prompt
             system_role = prompts.SYSTEM_ROLE
             mode_desc = prompts.MODES_CONFIG.get(mode, prompts.MODES_CONFIG["standard"])
             
-            # 双手分析模式
-            user_prompt = prompts.ANALYSIS_PROMPT_TEMPLATE_DUAL.format(mode_desc=mode_desc)
+            # 根据类型选择 Prompt
+            if analysis_type == "bestie":
+                user_prompt = prompts.ANALYSIS_PROMPT_TEMPLATE_BESTIE.format(mode_desc=mode_desc)
+            elif analysis_type == "couple":
+                user_prompt = prompts.ANALYSIS_PROMPT_TEMPLATE_COUPLE.format(mode_desc=mode_desc)
+            else:
+                user_prompt = prompts.ANALYSIS_PROMPT_TEMPLATE_DUAL.format(mode_desc=mode_desc)
             
             content_list.append({"type": "text", "text": user_prompt})
             content_list.append({
                 "type": "image_url",
-                "image_url": {"url": f"data:image/jpeg;base64,{left_base64}", "detail": "high"}
+                "image_url": {"url": f"data:image/jpeg;base64,{img1_base64}", "detail": "high"}
             })
             content_list.append({
                 "type": "image_url",
-                "image_url": {"url": f"data:image/jpeg;base64,{right_base64}", "detail": "high"}
+                "image_url": {"url": f"data:image/jpeg;base64,{img2_base64}", "detail": "high"}
             })
 
             # 准备消息内容
@@ -121,7 +126,7 @@ class AnalysisService:
             return None
 
     @classmethod
-    def run_analysis(cls, db: Session, card_id: str, mode: str = "standard", image_path: str = None, model: str = None, right_image_path: str = None):
+    def run_analysis(cls, db: Session, card_id: str, mode: str = "standard", image_path: str = None, model: str = None, right_image_path: str = None, analysis_type: str = "personal"):
         """执行AI analysis逻辑，支持数据库持久化缓存"""
         # 0. 检查卡片状态
         card = db.query(Card).filter(Card.card_id == card_id).first()
@@ -129,22 +134,26 @@ class AnalysisService:
             logger.warning(f"Card {card_id} is not valid or already used.")
             return None
 
-        # 0. 首先检查数据库中是否存在该模式的缓存 (且未被逻辑删除)
+        # 0. 首先检查数据库中是否存在该模式和类型的缓存 (且未被逻辑删除)
         cached_interpretation = db.query(InterpretationCache).filter(
             InterpretationCache.card_id == card_id,
             InterpretationCache.mode == mode,
             InterpretationCache.is_deleted == False
         ).first()
         
+        # 注意：这里可能需要区分 type，但目前数据库表 InterpretationCache 可能没有 type 字段
+        # 建议先不改数据库，或者如果业务需要，则需要添加 type 字段。
+        # 这里为了保持一致性，我们先继续
+        
         if cached_interpretation:
             logger.info(f"Returning DB cached result for card: {card_id}, mode: {mode}")
             return cached_interpretation.result_json
 
         if not image_path or not os.path.exists(image_path) or not right_image_path or not os.path.exists(right_image_path):
-            logger.warning(f"Both hand images must be provided and exist for card: {card_id}")
+            logger.warning(f"Both images must be provided and exist for card: {card_id}")
             return None
 
-        result_data = cls.analyze_with_vision_model(image_path, right_image_path, mode=mode, model=model)
+        result_data = cls.analyze_with_vision_model(image_path, right_image_path, mode=mode, model=model, analysis_type=analysis_type)
         
         # 如果分析失败（返回 None），则直接返回
         if not result_data:

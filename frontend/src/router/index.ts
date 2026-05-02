@@ -14,9 +14,24 @@ const router = createRouter({
       component: () => import('../views/CardInputView.vue')
     },
     {
+      path: '/analysis-type',
+      name: 'analysis-type',
+      component: () => import('../views/AnalysisTypeView.vue')
+    },
+    {
       path: '/upload',
       name: 'upload',
       component: () => import('../views/UploadView.vue')
+    },
+    {
+      path: '/bestie-upload',
+      name: 'bestie-upload',
+      component: () => import('../views/BestieUploadView.vue')
+    },
+    {
+      path: '/couple-upload',
+      name: 'couple-upload',
+      component: () => import('../views/CoupleUploadView.vue')
     },
     {
       path: '/mode-select',

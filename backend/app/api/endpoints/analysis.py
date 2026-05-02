@@ -17,6 +17,7 @@ class AnalysisStartRequest(BaseModel):
     card_id: str
     mode: str = "standard"
     model: str = None
+    type: str = "personal"
 
 class ShareRecordRequest(BaseModel):
     card_id: str
@@ -96,38 +97,120 @@ async def upload_both_hands(
         }
     }
 
+@router.post("/upload-bestie")
+async def upload_bestie_hands(
+    card_id: str = Form(...),
+    self_hand: UploadFile = File(...),
+    bestie_hand: UploadFile = File(...)
+):
+    """上传个人与闺蜜的手相照片"""
+    if not self_hand.content_type.startswith("image/") or not bestie_hand.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="只能上传图片文件")
+    
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    
+    # 保存个人手相
+    self_ext = os.path.splitext(self_hand.filename)[1]
+    self_name = f"{card_id}_self_{uuid.uuid4()}{self_ext}"
+    self_path = os.path.join(settings.UPLOAD_DIR, self_name)
+    with open(self_path, "wb") as buffer:
+        shutil.copyfileobj(self_hand.file, buffer)
+        
+    # 保存闺蜜手相
+    bestie_ext = os.path.splitext(bestie_hand.filename)[1]
+    bestie_name = f"{card_id}_bestie_{uuid.uuid4()}{bestie_ext}"
+    bestie_path = os.path.join(settings.UPLOAD_DIR, bestie_name)
+    with open(bestie_path, "wb") as buffer:
+        shutil.copyfileobj(bestie_hand.file, buffer)
+    
+    return {
+        "code": 0,
+        "message": "闺蜜匹配图片上传成功",
+        "data": {
+            "self": self_name,
+            "bestie": bestie_name
+        }
+    }
+
+@router.post("/upload-couple")
+async def upload_couple_hands(
+    card_id: str = Form(...),
+    male_hand: UploadFile = File(...),
+    female_hand: UploadFile = File(...)
+):
+    """上传男生与女生（情侣）的手相照片"""
+    if not male_hand.content_type.startswith("image/") or not female_hand.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="只能上传图片文件")
+    
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    
+    # 保存男生手相
+    male_ext = os.path.splitext(male_hand.filename)[1]
+    male_name = f"{card_id}_male_{uuid.uuid4()}{male_ext}"
+    male_path = os.path.join(settings.UPLOAD_DIR, male_name)
+    with open(male_path, "wb") as buffer:
+        shutil.copyfileobj(male_hand.file, buffer)
+        
+    # 保存女生手相
+    female_ext = os.path.splitext(female_hand.filename)[1]
+    female_name = f"{card_id}_female_{uuid.uuid4()}{female_ext}"
+    female_path = os.path.join(settings.UPLOAD_DIR, female_name)
+    with open(female_path, "wb") as buffer:
+        shutil.copyfileobj(female_hand.file, buffer)
+    
+    return {
+        "code": 0,
+        "message": "情侣匹配图片上传成功",
+        "data": {
+            "male": male_name,
+            "female": female_name
+        }
+    }
+
 @router.post("/start")
 async def start_analysis(request: AnalysisStartRequest, db: Session = Depends(get_db)):
     """开始AI分析任务"""
-    # 寻找该卡密上传的最新双手图片
-    left_path = None
-    right_path = None
+    # 寻找该卡密上传的最新相关图片
+    img1_path = None
+    img2_path = None
     
+    # 根据业务类型确定搜索前缀
+    if request.type == "bestie":
+        prefix1, prefix2 = "self_", "bestie_"
+        error_msg = "必须上传完整的个人与闺蜜照片方可开始分析"
+    elif request.type == "couple":
+        prefix1, prefix2 = "male_", "female_"
+        error_msg = "必须上传完整的男生与女生照片方可开始分析"
+    else: # personal
+        prefix1, prefix2 = "left_", "right_"
+        error_msg = "必须上传完整的左右手照片方可开始分析"
+
     if os.path.exists(settings.UPLOAD_DIR):
         all_files = os.listdir(settings.UPLOAD_DIR)
         
-        # 找左手
-        left_files = [f for f in all_files if f.startswith(f"{request.card_id}_left_")]
-        if left_files:
-            left_files.sort(key=lambda x: os.path.getmtime(os.path.join(settings.UPLOAD_DIR, x)), reverse=True)
-            left_path = os.path.join(settings.UPLOAD_DIR, left_files[0])
+        # 找图1
+        img1_files = [f for f in all_files if f.startswith(f"{request.card_id}_{prefix1}")]
+        if img1_files:
+            img1_files.sort(key=lambda x: os.path.getmtime(os.path.join(settings.UPLOAD_DIR, x)), reverse=True)
+            img1_path = os.path.join(settings.UPLOAD_DIR, img1_files[0])
             
-        # 找右手
-    right_files = [f for f in all_files if f.startswith(f"{request.card_id}_right_")]
-    if right_files:
-        right_files.sort(key=lambda x: os.path.getmtime(os.path.join(settings.UPLOAD_DIR, x)), reverse=True)
-        right_path = os.path.join(settings.UPLOAD_DIR, right_files[0])
+        # 找图2
+        img2_files = [f for f in all_files if f.startswith(f"{request.card_id}_{prefix2}")]
+        if img2_files:
+            img2_files.sort(key=lambda x: os.path.getmtime(os.path.join(settings.UPLOAD_DIR, x)), reverse=True)
+            img2_path = os.path.join(settings.UPLOAD_DIR, img2_files[0])
 
-    if not left_path or not right_path:
-        raise HTTPException(status_code=400, detail="必须上传完整的左右手照片方可开始分析")
+    if not img1_path or not img2_path:
+        raise HTTPException(status_code=400, detail=error_msg)
 
     result = AnalysisService.run_analysis(
         db, 
         request.card_id, 
         request.mode, 
-        image_path=left_path, # 传入主图（或左手图）
-        right_image_path=right_path, # 传入右手图
-        model=request.model
+        image_path=img1_path,
+        right_image_path=img2_path,
+        model=request.model,
+        analysis_type=request.type
     )
     return {
         "code": 0,

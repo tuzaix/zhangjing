@@ -6,6 +6,7 @@ import GlassCard from '@/components/GlassCard.vue'
 const route = useRoute()
 const router = useRouter()
 const cardId = route.query.cardId as string
+const type = route.query.type as string || 'personal'
 
 const activeMode = ref('standard')
 
@@ -21,7 +22,8 @@ const confirmMode = () => {
     name: 'loading', 
     query: { 
       cardId,
-      mode: activeMode.value 
+      mode: activeMode.value,
+      type: type
     } 
   })
 }

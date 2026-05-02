@@ -9,6 +9,7 @@ const route = useRoute()
 const router = useRouter()
 const cardId = route.query.cardId as string
 const activeModeId = (route.query.mode as string) || 'standard'
+const type = (route.query.type as string) || 'personal'
 const result = ref<any>(null)
 const activeReportTab = ref('career')
 const isLoading = ref(true)
@@ -91,11 +92,19 @@ const generatePoster = async () => {
 }
 
 // 雷达图配置
-const radarLabels = ['生命线', '智慧线', '感情线', '婚姻线', '事业线']
+const radarLabels = computed(() => {
+  if (type === 'bestie') {
+    return ['默契度', '互补性', '带旺指数', '耐撕等级', '长久指数']
+  } else if (type === 'couple') {
+    return ['匹配度', '默契度', '忠诚指数', '财富加持', '正缘指数']
+  }
+  return ['生命线', '智慧线', '感情线', '婚姻线', '事业线']
+})
+
 const radarData = computed(() => {
   if (!result.value || !result.value.dimensions) return []
   
-  return radarLabels.map(label => {
+  return radarLabels.value.map(label => {
     const dim = result.value.dimensions.find((d: any) => d.name.includes(label))
     return dim ? dim.score : 60 // 默认值 60
   })
@@ -105,7 +114,7 @@ const radarPoints = computed(() => {
   const size = 200
   const center = size / 2
   const radius = center * 0.8
-  const angleStep = (Math.PI * 2) / radarLabels.length
+  const angleStep = (Math.PI * 2) / radarLabels.value.length
   
   return radarData.value.map((score, i) => {
     const angle = i * angleStep - Math.PI / 2
@@ -126,11 +135,11 @@ const radarGridPaths = computed(() => {
   const size = 200
   const center = size / 2
   const radius = center * 0.8
-  const angleStep = (Math.PI * 2) / radarLabels.length
+  const angleStep = (Math.PI * 2) / radarLabels.value.length
   const levels = [0.2, 0.4, 0.6, 0.8, 1]
   
   return levels.map(level => {
-    return radarLabels.map((_, i) => {
+    return radarLabels.value.map((_, i) => {
       const angle = i * angleStep - Math.PI / 2
       const r = level * radius
       return `${i === 0 ? 'M' : 'L'} ${center + r * Math.cos(angle)} ${center + r * Math.sin(angle)}`
@@ -142,9 +151,9 @@ const radarLabelPositions = computed(() => {
   const size = 200
   const center = size / 2
   const radius = center * 0.85
-  const angleStep = (Math.PI * 2) / radarLabels.length
+  const angleStep = (Math.PI * 2) / radarLabels.value.length
   
-  return radarLabels.map((label, i) => {
+  return radarLabels.value.map((label, i) => {
     const angle = i * angleStep - Math.PI / 2
     return {
       text: label,
